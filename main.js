@@ -63,8 +63,29 @@ let App = React.createClass({
     })
   },
 
+  getBalance() {
+    let {transactions} = this.state;
+    let balanceObj = {};
+    let balance = 0, creditTotal = 0, debitTotal = 0;
+    transactions.forEach(transaction => {
+      if(transaction.type === 'credit') {
+        balance += Number(transaction.amount);
+        creditTotal += Number(transaction.amount);
+        balanceObj.balance = balance;
+        balanceObj.creditTotal = creditTotal;
+      }else{
+        balance -= Number(transaction.amount);
+        debitTotal += Number(transaction.amount);
+        balanceObj.balance = balance;
+        balanceObj.debitTotal = debitTotal;
+      }
+    })
+    return balanceObj;
+  },
+
   render() {
     let transactions = this.state;
+    const balanceObj = this.getBalance();
     return (
       <div className="container">
         <div className="row">
@@ -74,7 +95,11 @@ let App = React.createClass({
         </div>
         <div className="row">
           <h3>
-            <Balance transactions={this.state.transactions}/>
+            <div className="alert alert-warning" role="alert">
+              The Balance is ${numeral(balanceObj.balance).format('0,0')}.
+              Total Credits: ${numeral(balanceObj.creditTotal).format('0,0')} .
+              Total Debits: ${numeral(balanceObj.debitTotal).format('0,0')} .
+            </div>
           </h3>
         </div>
         <div className="row">
@@ -238,8 +263,8 @@ const TransactionTable = React.createClass({
         <tr key={transaction.createAt}>
           <td>{moment(transaction.createAt).format('lll')}</td>
           <td>{transaction.description}</td>
-          <td>+{credit}</td>
-          <td>-{debit}</td>
+          <td>+{numeral(credit).format('0,0')}</td>
+          <td>-{numeral(debit).format('0,0')}</td>
           <td>
             <button className="btn btn-primary btn-xs" onClick={() => this.editTransaction(transaction)}>
               <span className="glyphicon glyphicon-edit"></span>
@@ -309,9 +334,6 @@ const TransactionTable = React.createClass({
   }
 });
 
-const Balance = props => {
-
-};
 
 ReactDOM.render(
   <App />,
