@@ -1,3 +1,5 @@
+var Modal = ReactBootstrap.Modal;
+var Button = ReactBootstrap.Button;
 
 let App = React.createClass({
   getInitialState() {
@@ -6,15 +8,55 @@ let App = React.createClass({
     }
   },
 
+  componentDidMount() {
+    let bankTransactions = this.bankStorage();
+    this.setState({ transactions: bankTransactions });
+  },
+
   addTransaction(transaction) {
-    const { transactions } = this.state;
+    let { transactions } = this.state;
     this.setState({
       transactions: [...transactions, transaction]
-    })
+    });
+
+    let bankTransactions = this.bankStorage();
+    bankTransactions.push(transaction);
+    this.writeToStorage(bankTransactions);
+  },
+
+  bankStorage() {
+    let json = localStorage.bankTransactions;
+    let bankTransactions;
+    try {
+      bankTransactions = JSON.parse(json);
+    }catch(e) {
+      bankTransactions = [];
+    }
+    return bankTransactions;
+  },
+
+  writeToStorage(bankTransactions) {
+    localStorage.bankTransactions = JSON.stringify(bankTransactions);
+  },
+
+  removeTransaction(id) {
+    let bankTransactions = this.bankStorage();
+    bankTransactions = bankTransactions.filter(transaction => transaction.createAt !== id);
+    this.writeToStorage(bankTransactions);
+
+    let { transactions } = this.state;
+    this.setState({
+      transactions: bankTransactions
+    });
+  },
+
+  updateTransaction(id, newTransaction){
+    let bankTransactions = this.bankStorage();
+
   },
 
   render() {
-    const { transactions } = this.state;
+    let transactions = this.state;
     return (
       <div className="container">
         <div className="row">
@@ -28,7 +70,7 @@ let App = React.createClass({
           </h3>
         </div>
         <div className="row">
-          table
+          <TransactionTable transactions={this.state.transactions} removeTransaction={this.removeTransaction} updateTransaction={this.updateTransaction}/>
         </div>
       </div>
     )
@@ -61,13 +103,21 @@ const TransactionForm = React.createClass({
 
   submitForm(event) {
     event.preventDefault();
+
     let transaction = {
       type: this.state.type,
       amount: this.state.amount,
       description: this.state.description,
       createAt: Date.now()
     };
+
     this.props.addTransaction(transaction);
+
+    this.setState({
+      type: '',
+      amount: 0,
+      description: ''
+    });
   },
 
   render() {
@@ -106,6 +156,125 @@ const TransactionForm = React.createClass({
           />
           <button className="btn btn-primary" onClick={this.submitForm}>Submit</button>
         </form>
+      </div>
+    )
+  }
+});
+
+const TransactionTable = React.createClass({
+  getInitialState() {
+    return {
+      showModal: false,
+      editType:'',
+      editAmount: 0,
+      editDescription:'',
+      editId: null
+    }
+  },
+
+  saveEdit(id) {
+    let newTransaction = {
+      type: this.state.editType,
+      description: this.state.editDescription,
+      amount: this.state.editAmount
+    };
+
+    this.props.updateTransaction(id, newTransaction);
+    this.setState({editId: null});
+    this.closeModal();
+  },
+
+  cancelEdit() {
+    this.setState({editId: null});
+    this.closeModal();
+  },
+
+  closeModal() {
+    this.setState({showModal: false});
+  },
+
+  openModal() {
+    this.setState({showModal: true});
+  },
+
+  editTransaction(transaction) {
+    this.openModal();
+    this.setState({
+      editId: transaction.createAt,
+      editDescription: transaction.description,
+      editAmount: transaction.amount,
+      editType: transaction.type
+    })
+  },
+
+  deleteTransaction(transaction) {
+    let id = transaction.createAt;
+    this.props.removeTransaction(id);
+  },
+
+  render() {
+    let { transactions } = this.props;
+    let rows = transactions.map(transaction => {
+      let debit = 0;
+      let credit = 0;
+      if(transaction.type === 'debit'){
+        debit = Number(transaction.amount);
+      }else{
+        credit = Number(transaction.amount);
+      }
+
+      return (
+        <tr key={transaction.createAt}>
+          <td>{moment(transaction.createAt).format('lll')}</td>
+          <td>{transaction.description}</td>
+          <td>+{credit}</td>
+          <td>-{debit}</td>
+          <td>
+            <button className="btn btn-primary btn-xs" onClick={() => this.editTransaction(transaction)}>
+              <span className="glyphicon glyphicon-edit"></span>
+            </button>
+          </td>
+          <td>
+            <button className="btn btn-danger btn-xs" onClick={() => this.deleteTransaction(transaction)}>
+              <span className="glyphicon glyphicon-trash"></span>
+            </button>
+          </td>
+        </tr>
+      )
+    })
+
+    return (
+      <div>
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Description</th>
+              <th>Credit</th>
+              <th>Debit</th>
+              <th>Edit</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows}
+          </tbody>
+        </table>
+        <Modal show={this.state.showModal} onHide={this.closeModal}>
+          <Modal.Header closeButton>
+            <Modal.Title>Edit</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <input type="radio" name= "type" value="debit" onClick={e=>{this.setState({editType: e.target.value})}}/> Debit &nbsp;
+            <input type="radio" name= "type" value="credit" onClick={e=>{this.setState({editType: e.target.value})}}/> Credit <br/>
+            <span>Value: </span><input type="text" value={this.state.editAmount} onChange={e => {this.setState({editAmount: e.target.value}) }}/>&nbsp;
+            <span>Description: </span><input type="text" value={this.state.editDescription} onChange={e => {this.setState({editDescription: e.target.value}) }}/><br/>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button className="btn btn-primary" onClick={() => this.saveEdit(this.state.editId)}>Save</Button>
+            <Button onClick={this.cancelEdit}>Close</Button>
+          </Modal.Footer>
+        </Modal>
       </div>
     )
   }
