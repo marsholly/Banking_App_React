@@ -51,8 +51,16 @@ let App = React.createClass({
   },
 
   updateTransaction(id, newTransaction){
-    let bankTransactions = this.bankStorage();
-
+    let json = localStorage.bankTransactions;
+    let bankTransactions = JSON.parse(json);
+    let index = bankTransactions.findIndex(transaction => {
+      return transaction.createAt === id;
+    });
+    bankTransactions[index] = newTransaction;
+    localStorage.bankTransactions = JSON.stringify(bankTransactions);
+    this.setState({
+      transactions: bankTransactions
+    })
   },
 
   render() {
@@ -66,7 +74,7 @@ let App = React.createClass({
         </div>
         <div className="row">
           <h3>
-            Amount
+            <Balance transactions={this.state.transactions}/>
           </h3>
         </div>
         <div className="row">
@@ -168,20 +176,8 @@ const TransactionTable = React.createClass({
       editType:'',
       editAmount: 0,
       editDescription:'',
-      editId: null
+      editCreateAt: ''
     }
-  },
-
-  saveEdit(id) {
-    let newTransaction = {
-      type: this.state.editType,
-      description: this.state.editDescription,
-      amount: this.state.editAmount
-    };
-
-    this.props.updateTransaction(id, newTransaction);
-    this.setState({editId: null});
-    this.closeModal();
   },
 
   cancelEdit() {
@@ -200,12 +196,27 @@ const TransactionTable = React.createClass({
   editTransaction(transaction) {
     this.openModal();
     this.setState({
-      editId: transaction.createAt,
       editDescription: transaction.description,
       editAmount: transaction.amount,
-      editType: transaction.type
+      editType: transaction.type,
+      editCreateAt: transaction.createAt
     })
   },
+
+  saveEdit(id) {
+    let newTransaction = {
+      type: this.state.editType,
+      description: this.state.editDescription,
+      amount: this.state.editAmount,
+      createAt: this.state.editCreateAt
+    };
+
+    this.props.updateTransaction(id, newTransaction);
+    this.setState({editCreateAt: null});
+    this.closeModal();
+  },
+
+
 
   deleteTransaction(transaction) {
     let id = transaction.createAt;
@@ -247,13 +258,13 @@ const TransactionTable = React.createClass({
       <div>
         <table className="table table-striped">
           <thead>
-            <tr>
-              <th>Time</th>
-              <th>Description</th>
-              <th>Credit</th>
-              <th>Debit</th>
-              <th>Edit</th>
-              <th>Delete</th>
+            <tr className="success tbr">
+              <td>Time</td>
+              <td>Description</td>
+              <td>Credit</td>
+              <td>Debit</td>
+              <td>Edit</td>
+              <td>Delete</td>
             </tr>
           </thead>
           <tbody>
@@ -266,12 +277,30 @@ const TransactionTable = React.createClass({
           </Modal.Header>
           <Modal.Body>
             <input type="radio" name= "type" value="debit" onClick={e=>{this.setState({editType: e.target.value})}}/> Debit &nbsp;
-            <input type="radio" name= "type" value="credit" onClick={e=>{this.setState({editType: e.target.value})}}/> Credit <br/>
-            <span>Value: </span><input type="text" value={this.state.editAmount} onChange={e => {this.setState({editAmount: e.target.value}) }}/>&nbsp;
-            <span>Description: </span><input type="text" value={this.state.editDescription} onChange={e => {this.setState({editDescription: e.target.value}) }}/><br/>
+            <input type="radio" name= "type" value="credit" onClick={e=>{this.setState({editType: e.target.value})}}/> Credit
+            <br/>
+            <span>AMOUNT: </span>
+            <input
+              type="number"
+              min="0"
+              className="form-control"
+              id="exampleInputAmount"
+              placeholder="Amount"
+              value={this.state.editAmount}
+              onChange={e => {this.setState({editAmount: e.target.value}) }}
+            />
+            <br/>
+            <span>DESCRIPTION: </span>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Description"
+              value={this.state.editDescription}
+              onChange={e => {this.setState({editDescription: e.target.value}) }}
+            />
           </Modal.Body>
           <Modal.Footer>
-            <Button className="btn btn-primary" onClick={() => this.saveEdit(this.state.editId)}>Save</Button>
+            <Button className="btn btn-primary" onClick={() => this.saveEdit(this.state.editCreateAt)}>Save</Button>
             <Button onClick={this.cancelEdit}>Close</Button>
           </Modal.Footer>
         </Modal>
@@ -279,6 +308,10 @@ const TransactionTable = React.createClass({
     )
   }
 });
+
+const Balance = props => {
+
+};
 
 ReactDOM.render(
   <App />,
