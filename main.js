@@ -45,9 +45,7 @@ let App = React.createClass({
     this.writeToStorage(bankTransactions);
 
     let { transactions } = this.state;
-    this.setState({
-      transactions: bankTransactions
-    });
+    this.setState({ transactions: bankTransactions });
   },
 
   updateTransaction(id, newTransaction){
@@ -83,6 +81,10 @@ let App = React.createClass({
     return balanceObj;
   },
 
+  sortTransactions(newTransactions){
+    this.setState({transactions: newTransactions});
+  },
+
   render() {
     let transactions = this.state;
     const balanceObj = this.getBalance();
@@ -90,7 +92,7 @@ let App = React.createClass({
       <div className="container">
         <div className="row">
           <h4>
-            <TransactionForm addTransaction={this.addTransaction}/>
+            <TransactionForm addTransaction={this.addTransaction} />
           </h4>
         </div>
         <div className="row">
@@ -103,7 +105,12 @@ let App = React.createClass({
           </h3>
         </div>
         <div className="row">
-          <TransactionTable transactions={this.state.transactions} removeTransaction={this.removeTransaction} updateTransaction={this.updateTransaction}/>
+          <TransactionTable
+            transactions={this.state.transactions}
+            removeTransaction={this.removeTransaction}
+            updateTransaction={this.updateTransaction}
+            sortTransactions={this.sortTransactions}
+          />
         </div>
       </div>
     )
@@ -154,6 +161,7 @@ const TransactionForm = React.createClass({
   },
 
   render() {
+    let { transactions } = this.props;
     return (
       <div>
         <form className="form-inline" >
@@ -179,15 +187,15 @@ const TransactionForm = React.createClass({
               />
             </div>
           </div>
-          <span>  For: </span>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Description"
-            value={this.state.description}
-            onChange={this.descriptionChange}
-          />
-          <button className="btn btn-primary" onClick={this.submitForm}>Submit</button>
+            <span>  For: </span>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Description"
+              value={this.state.description}
+              onChange={this.descriptionChange}
+            />&nbsp;
+          <button className="btn btn-default" onClick={this.submitForm}>Submit</button>
         </form>
       </div>
     )
@@ -201,7 +209,8 @@ const TransactionTable = React.createClass({
       editType:'',
       editAmount: 0,
       editDescription:'',
-      editCreateAt: ''
+      editCreateAt: '',
+      sortBtn: false
     }
   },
 
@@ -241,11 +250,41 @@ const TransactionTable = React.createClass({
     this.closeModal();
   },
 
-
-
   deleteTransaction(transaction) {
     let id = transaction.createAt;
     this.props.removeTransaction(id);
+  },
+
+  sortByTime(transactions) {
+    if(!this.state.sortBtn) {
+      this.setState({sortBtn: true});
+      let newTransactions = transactions.sort((cur, next) => {
+        return ( cur.createAt - next.createAt);
+      });
+      this.props.sortTransactions(newTransactions);
+    } else {
+      this.setState({sortBtn: false});
+      let newTransactions = transactions.sort((cur, next) => {
+        return ( next.createAt - cur.createAt);
+      });
+      this.props.sortTransactions(newTransactions);
+    }
+  },
+
+  sortByDescription(transactions) {
+    if(!this.state.sortBtn) {
+      this.setState({sortBtn: true});
+      let newTransactions = transactions.sort((cur, next) => {
+        return ( cur.description > next.description) ? 1 : ((next.description > cur.description) ? -1 : 0) ;
+      });
+      this.props.sortTransactions(newTransactions);
+    } else {
+      this.setState({sortBtn: false});
+      let newTransactions = transactions.sort((cur, next) => {
+        return ( cur.description < next.description) ? 1 : ((next.description < cur.description) ? -1 : 0) ;
+      });
+      this.props.sortTransactions(newTransactions);
+    }
   },
 
   render() {
@@ -277,15 +316,15 @@ const TransactionTable = React.createClass({
           </td>
         </tr>
       )
-    })
+    });
 
     return (
       <div>
         <table className="table table-striped">
           <thead>
             <tr className="success tbr">
-              <td>Time</td>
-              <td>Description</td>
+              <td>Date <span onClick={()=>this.sortByTime(transactions)}>{this.state.sortBtn?'▲':'▼'}</span></td>
+              <td>Description <span onClick={()=>this.sortByDescription(transactions)}>{this.state.sortBtn?'▲':'▼'}</span></td>
               <td>Credit</td>
               <td>Debit</td>
               <td>Edit</td>
@@ -301,8 +340,20 @@ const TransactionTable = React.createClass({
             <Modal.Title>Edit</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <input type="radio" name= "type" value="debit" onClick={e=>{this.setState({editType: e.target.value})}}/> Debit &nbsp;
-            <input type="radio" name= "type" value="credit" onClick={e=>{this.setState({editType: e.target.value})}}/> Credit
+            <input
+              type="radio"
+              name= "type"
+              value="debit"
+              onClick={e=>{this.setState({editType: e.target.value})}}
+            />
+              Debit &nbsp;
+            <input
+              type="radio"
+              name= "type"
+              value="credit"
+              onClick={e=>{this.setState({editType: e.target.value})}}
+            />
+              Credit
             <br/>
             <span>AMOUNT: </span>
             <input
