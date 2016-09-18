@@ -81,18 +81,27 @@ let App = React.createClass({
     return balanceObj;
   },
 
-  sortTransactions(newTransactions){
+  sortTransactions(newTransactions) {
     this.setState({transactions: newTransactions});
+  },
+
+  search(searchResult) {
+    this.setState({transactions: searchResult })
   },
 
   render() {
     let transactions = this.state;
+    let bankTransactions = this.bankStorage();
     const balanceObj = this.getBalance();
     return (
       <div className="container">
         <div className="row">
           <h4>
-            <TransactionForm addTransaction={this.addTransaction} />
+            <TransactionForm
+              addTransaction={this.addTransaction}
+              bankTransactions={bankTransactions}
+              search={this.search}
+            />
           </h4>
         </div>
         <div className="row">
@@ -122,7 +131,8 @@ const TransactionForm = React.createClass({
     return {
       type: '',
       amount: 0,
-      description: ''
+      description: '',
+      search:''
     }
   },
 
@@ -160,11 +170,30 @@ const TransactionForm = React.createClass({
     });
   },
 
+  searchInputChange(event) {
+    let search = event.target.value;
+    this.setState({ search });
+  },
+
+  searchByDescription(transactions) {
+    let searchValue = this.state.search;
+    let searchResult;
+    if(searchValue === ''){
+      searchResult = transactions;
+    }else{
+      searchResult = transactions.filter(transaction => {
+        return transaction.description === searchValue;
+      });
+    }
+    this.props.search(searchResult);
+    this.setState({search: ''});
+  },
+
   render() {
-    let { transactions } = this.props;
+    let transactions = this.props.bankTransactions;
     return (
-      <div>
-        <form className="form-inline" >
+      <div className='row'>
+        <form className="navbar-form navbar-form navbar-left" >
           <label className="radio-inline">
             <input type="radio" name="type" id="inlineRadio1" value="credit" onClick={this.selectType}/> Credit
           </label>
@@ -197,6 +226,18 @@ const TransactionForm = React.createClass({
             />&nbsp;
           <button className="btn btn-default" onClick={this.submitForm}>Submit</button>
         </form>
+        <div className="navbar-form navbar-right">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search"
+            value={this.state.search}
+            onChange={this.searchInputChange}
+          />
+          <button className="btn btn-default" onClick={()=>this.searchByDescription(transactions)}>
+            <i className="glyphicon glyphicon-search"></i>
+          </button>
+        </div>
       </div>
     )
   }
