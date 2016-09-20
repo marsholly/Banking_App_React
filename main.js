@@ -29,7 +29,7 @@ let App = React.createClass({
     let bankTransactions;
     try {
       bankTransactions = JSON.parse(json);
-    }catch(e) {
+    } catch(e) {
       bankTransactions = [];
     }
     return bankTransactions;
@@ -170,23 +170,36 @@ const TransactionForm = React.createClass({
     });
   },
 
-  searchInputChange(event) {
-    let search = event.target.value;
-    this.setState({ search });
-  },
+  // searchInputChange(event) {
+  //   let search = event.target.value;
+  //   this.setState({ search });
+  // },
+
+  // searchByDescription(transactions) {
+  //   let searchValue = this.state.search;
+  //   let searchResult;
+  //   if(searchValue === ''){
+  //     searchResult = transactions;
+  //   }else{
+  //     searchResult = transactions.filter(transaction => {
+  //       return transaction.description === searchValue;
+  //     });
+  //   }
+  //   this.props.search(searchResult);
+  //   this.setState({search: ''});
+  // },
 
   searchByDescription(transactions) {
     let searchValue = this.state.search;
     let searchResult;
-    if(searchValue === ''){
+    if (searchValue === '') {
       searchResult = transactions;
-    }else{
+    } else {
       searchResult = transactions.filter(transaction => {
         return transaction.description === searchValue;
       });
     }
     this.props.search(searchResult);
-    this.setState({search: ''});
   },
 
   render() {
@@ -232,11 +245,11 @@ const TransactionForm = React.createClass({
             className="form-control"
             placeholder="Search"
             value={this.state.search}
-            onChange={this.searchInputChange}
+            onChange={(e)=> this.setState({ search: e.target.value }, () => this.searchByDescription(transactions))}
           />
-          <button className="btn btn-default" onClick={()=>this.searchByDescription(transactions)}>
+          {/* <button className="btn btn-default" onClick={()=>this.searchByDescription(transactions)}>
             <i className="glyphicon glyphicon-search"></i>
-          </button>
+          </button> */}
         </div>
       </div>
     )
@@ -300,13 +313,13 @@ const TransactionTable = React.createClass({
     if(!this.state.sortBtn) {
       this.setState({sortBtn: true});
       let newTransactions = transactions.sort((cur, next) => {
-        return ( cur.createAt - next.createAt);
+        return ( cur.createAt - next.createAt );
       });
       this.props.sortTransactions(newTransactions);
     } else {
       this.setState({sortBtn: false});
       let newTransactions = transactions.sort((cur, next) => {
-        return ( next.createAt - cur.createAt);
+        return ( next.createAt - cur.createAt );
       });
       this.props.sortTransactions(newTransactions);
     }
